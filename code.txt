@@ -1,0 +1,45 @@
+#Step 1 Cloning The Yolo-V5 Files From Official Repository
+
+#Clone repo, install dependencies and check PyTorch and GPU
+!git clone https://github.com/ultralytics/yolov5  # clone
+%cd yolov5
+%pip install -qr requirements.txt  # install
+
+import torch
+from yolov5 import utils
+display = utils.notebook_init()  # checks
+
+#Step 2 Dataset
+
+#unzip dataset and make it to local drive
+!unzip /content/drive/MyDrive/yoloshared/dataset/sawit200x200m_final_validation/obj.zip -d /content/yolov5/data
+!unzip /content/drive/MyDrive/yoloshared/dataset/sawit200x200m_final_validation/test.zip -d /content/yolov5/data
+
+#Step 3 Training configuration
+
+#define class and file path on coco128.yaml
+!cp /content/drive/MyDrive/yoloshared/config/yolov5/coco128.yaml /content/yolov5/data/coco128.yaml
+
+#Step 4 Train YOLOv5m on coco128_custom 
+
+#run training starting from the begginning
+!python train.py --img 1024 --batch 8 --epochs 500 --data /content/yolov5/data/coco128.yaml --weights yolov5m.pt --cache --patience 0 --project /content/drive/MyDrive/yoloshared/config/yolov5/backup200x200m_final_random0_1024_validation_5m --name backup500
+
+#retraining from the last checkpoint
+!python train.py --img 1024 --batch 8 --epochs 500 --data /content/yolov5/data/coco128.yaml --weights /content/drive/MyDrive/yoloshared/config/yolov5/backup200x200m_final_random0_1024_validation_5m/backup500/weights/last_500.pt --cfg /content/yolov5/models/yolov5m.yaml --cache --patience 0 --project /content/drive/MyDrive/yoloshared/config/yolov5/backup200x200m_final_random0_1024_validation_5m --name backup1000
+
+#run training to resume (not finished on checkpoint) 
+!python train.py --resume /content/drive/MyDrive/yoloshared/config/yolov5/backup200x200m_final_random0_1024_validation_5m/backup500/weights/last_500.pt
+
+#Step 5 Check training results
+
+#check mAP
+!python val.py --data /content/yolov5/data/coco128.yaml --weights /content/drive/MyDrive/yoloshared/config/yolov5/backup200x200m_final_random0_1024_validation_5m/backup6000/weights/last_6000.pt --conf-thres 0.5
+
+#Step 6 Run detections
+
+#bounding box configuration
+!cp /content/drive/MyDrive/yoloshared/config/yolov5/plots.py /content/yolov5/utils/plots.py #line34 change color FF3838 to FF00FF 
+
+#run detection on new images
+!python detect.py --source /content/drive/MyDrive/yoloshared/dataset/Test/final/400x300m_wil24_grid32.jpg --weights /content/drive/MyDrive/yoloshared/config/yolov5/backup200x200m_final_random0_1024_validation_5m/backup6000/weights/last_6000.pt --img 1024 --save-txt --conf 0.5 --hide-labels --hide-conf --line-thickness 3
